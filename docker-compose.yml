@@ -10,7 +10,12 @@ services:
     volumes:
       - ./jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - jupyterhub_data:/srv/jupyterhub/data:z
+      - jupyterhub_data:/srv/jupyterhub/data
+      - type: bind
+        source: /jupyterhub/data
+        target: /jupyterhub/data
+        bind:
+          propagation: shared
     environment:
       - DOCKER_NETWORK_NAME=jupyterhub_network
     networks:
@@ -26,6 +31,8 @@ services:
 
 volumes:
   jupyterhub_data:
+    # Named volume for JupyterHub's internal data (DB, state, etc.)
+    # This is separate from /jupyterhub/data which holds user notebook files
 
 networks:
   jupyterhub_network:
