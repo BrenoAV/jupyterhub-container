@@ -1,0 +1,33 @@
+services:
+  jupyterhub:
+    build:
+      context: .
+      dockerfile: Dockerfile.hub
+    container_name: jupyterhub
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jupyterhub_data:/srv/jupyterhub/data:z
+    environment:
+      - DOCKER_NETWORK_NAME=jupyterhub_network
+    networks:
+      - jupyterhub_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.4'  # 4 cores * 60% = 2.4
+          memory: 16G
+        reservations:
+          cpus: '0.5'
+          memory: 2G
+
+volumes:
+  jupyterhub_data:
+
+networks:
+  jupyterhub_network:
+    name: jupyterhub_network
+    driver: bridge
