@@ -6,13 +6,21 @@ c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'
 c.Authenticator.admin_users = {"admin"}
 c.Authenticator.allow_all = True
 c.NativeAuthenticator.open_signup = False
+# c.NativeAuthenticator.check_common_password = True
+# c.NativeAuthenticator.minimum_password_length = 10
+c.NativeAuthenticator.allowed_failed_logins = 5
+c.NativeAuthenticator.seconds_before_next_try = 1200
+1
 
 # ── Server & Resource Limits ──────────────────────────────────────────────────
-c.JupyterHub.active_server_limit = 3
+# TODO: increase the possible memory usage
+c.JupyterHub.active_server_limit = 5
 c.JupyterHub.shutdown_on_logout = True
 
+# TODO: increase the memory and cpu limits
 c.DockerSpawner.mem_limit = "4G"
 c.DockerSpawner.cpu_limit = 2.0
+
 c.DockerSpawner.args = [
     "--ResourceUseDisplay.track_cpu_percent=True",
     "--ResourceUseDisplay.track_disk_usage=True"
@@ -21,7 +29,6 @@ c.DockerSpawner.args = [
 # ── COMBINED PRE-SPAWN HOOK (GPU + Folder Creation) ───────────────────────────
 # Must be async — DockerSpawner requires it to avoid silent failures
 async def pre_spawn_hook(spawner):
-    # 1. GPU Assignment
     user_groups = [g.name for g in spawner.user.groups]
     new_host_config = {}
 
@@ -57,8 +64,9 @@ c.JupyterHub.services = [
             "python3",
             "-m",
             "jupyterhub_idle_culler",
-            "--timeout=3600",   # seconds
-            "--cull-every=600", # check interval in seconds
+            "--timeout=7200",    # 2 hours
+            "--cull-every=600",  # check in 10m if changes
+            "--max-age=36000" # 10 hours
         ],
     }
 ]

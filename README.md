@@ -77,14 +77,13 @@ echo "/jupyterhub_disk.img  /jupyterhub  xfs  loop,defaults  0 0" | sudo tee -a 
 # 5. Verify the 50GB mount is active
 df -h /jupyterhub
 ```
-*(Note: Ensure your `docker-compose.yml` maps volumes using the SELinux `:z` flag, e.g., `- /jupyterhub/data:/jupyterhub/data:z`)*
 
 ### Step 4: Build the Single-User Images
 
 ```bash
 docker build -t custom-scipy-uv:latest --build-arg BASE_IMAGE=jupyter/scipy-notebook:latest -f Dockerfile.singleuser .
-docker build -t custom-pytorch-uv:latest --build-arg BASE_IMAGE=quay.io/jupyter/pytorch-notebook:cuda12-latest -f Dockerfile.singleuser .
-docker build -t custom-tensorflow-uv:latest --build-arg BASE_IMAGE=quay.io/jupyter/tensorflow-notebook:cuda-latest -f Dockerfile.singleuser .
+docker build -t custom-pytorch-uv:cuda12-latest --build-arg BASE_IMAGE=quay.io/jupyter/pytorch-notebook:cuda12-latest -f Dockerfile.singleuser .
+docker build -t custom-tensorflow-uv:cuda-latest --build-arg BASE_IMAGE=quay.io/jupyter/tensorflow-notebook:cuda-latest -f Dockerfile.singleuser .
 ```
 
 ### Step 5: Start the Hub!
