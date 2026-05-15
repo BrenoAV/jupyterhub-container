@@ -18,7 +18,7 @@ c.JupyterHub.active_server_limit = 5
 c.JupyterHub.shutdown_on_logout = True
 
 # TODO: increase the memory and cpu limits
-c.DockerSpawner.mem_limit = "4G"
+c.DockerSpawner.mem_limit = "2G"
 c.DockerSpawner.cpu_limit = 2.0
 
 c.DockerSpawner.args = [
@@ -75,8 +75,8 @@ c.JupyterHub.services = [
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
 c.DockerSpawner.allowed_images = {
     "Data Science (CPU Only)":          "custom-scipy-uv:latest",
-    "PyTorch Deep Learning (GPU)":      "custom-pytorch-uv:latest",
-    "TensorFlow Deep Learning (GPU)":   "custom-tensorflow-uv:latest",
+    "PyTorch Deep Learning (GPU)":      "custom-pytorch-uv:cuda12-latest",
+    "TensorFlow Deep Learning (GPU)":   "custom-tensorflow-uv:cuda-latest",
 }
 
 # Prevent Docker from trying to pull local-only images from a registry
