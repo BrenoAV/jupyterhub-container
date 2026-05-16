@@ -1,17 +1,20 @@
 # minimal-notebook is very lightweight compared to the others
 ARG BASE_IMAGE=quay.io/jupyter/minimal-notebook:latest
 FROM ${BASE_IMAGE}
-
 USER root
 
 # 1. Copy uv binaries
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # 2. Install ONLY the core Jupyter extensions globally
-RUN uv pip install --no-cache --system \
+RUN pip install --no-cache \
     jupyter-scheduler \
     jupyter-resource-usage \
     jupyterlab-nvdashboard \
     ipykernel
+
+# 3. Bake in the kernel creation helper
+COPY create_kernel.sh /usr/local/bin/create_kernel.sh
+RUN chmod +x /usr/local/bin/create_kernel.sh
 
 USER ${NB_UID}
