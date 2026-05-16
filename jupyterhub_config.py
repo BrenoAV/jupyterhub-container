@@ -10,7 +10,6 @@ c.NativeAuthenticator.open_signup = False
 # c.NativeAuthenticator.minimum_password_length = 10
 c.NativeAuthenticator.allowed_failed_logins = 5
 c.NativeAuthenticator.seconds_before_next_try = 1200
-1
 
 # ── Server & Resource Limits ──────────────────────────────────────────────────
 # TODO: increase the possible memory usage
@@ -18,8 +17,8 @@ c.JupyterHub.active_server_limit = 5
 c.JupyterHub.shutdown_on_logout = True
 
 # TODO: increase the memory and cpu limits
-c.DockerSpawner.mem_limit = "2G"
-c.DockerSpawner.cpu_limit = 2.0
+c.DockerSpawner.mem_limit = "16G"
+c.DockerSpawner.cpu_limit = 4.0
 
 c.DockerSpawner.args = [
     "--ResourceUseDisplay.track_cpu_percent=True",
@@ -74,16 +73,10 @@ c.JupyterHub.services = [
 # ── Spawner ───────────────────────────────────────────────────────────────────
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
 c.DockerSpawner.allowed_images = {
-<<<<<<< HEAD
-    "Data Science (CPU Only)":          "custom-scipy-uv:latest",
-    "PyTorch Deep Learning (GPU)":      "custom-pytorch-uv:cuda12-latest",
-    "TensorFlow Deep Learning (GPU)":   "custom-tensorflow-uv:cuda-latest",
-=======
     "Python Base (Bring Your Own Env)":         "custom-tiny-base:latest",
     "Computer Vision: General PyTorch (GPU)":   "custom-pytorch-cv:cuda12",
     "Computer Vision: YOLO & SAM (GPU)":        "custom-yolo-sam:cuda12",
     "LSD Environment (PyTorch 2.10)":           "custom-lsd-env:cuda12.8",
->>>>>>> 238beeb (updating dockerfiles)
 }
 
 # Prevent Docker from trying to pull local-only images from a registry
