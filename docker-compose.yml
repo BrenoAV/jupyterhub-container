@@ -23,7 +23,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.4'  # 4 cores * 60% = 2.4
+          cpus: '3.6'  # Xcores * %usage 
           memory: 16G
         reservations:
           cpus: '0.5'

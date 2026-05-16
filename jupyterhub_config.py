@@ -65,7 +65,7 @@ c.JupyterHub.services = [
             "-m",
             "jupyterhub_idle_culler",
             "--timeout=7200",    # 2 hours
-            "--cull-every=600",  # check in 10m if changes
+            "--cull-every=120",  # check in 2m if changes
             "--max-age=36000" # 10 hours
         ],
     }
@@ -74,9 +74,16 @@ c.JupyterHub.services = [
 # ── Spawner ───────────────────────────────────────────────────────────────────
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
 c.DockerSpawner.allowed_images = {
+<<<<<<< HEAD
     "Data Science (CPU Only)":          "custom-scipy-uv:latest",
     "PyTorch Deep Learning (GPU)":      "custom-pytorch-uv:cuda12-latest",
     "TensorFlow Deep Learning (GPU)":   "custom-tensorflow-uv:cuda-latest",
+=======
+    "Python Base (Bring Your Own Env)":         "custom-tiny-base:latest",
+    "Computer Vision: General PyTorch (GPU)":   "custom-pytorch-cv:cuda12",
+    "Computer Vision: YOLO & SAM (GPU)":        "custom-yolo-sam:cuda12",
+    "LSD Environment (PyTorch 2.10)":           "custom-lsd-env:cuda12.8",
+>>>>>>> 238beeb (updating dockerfiles)
 }
 
 # Prevent Docker from trying to pull local-only images from a registry

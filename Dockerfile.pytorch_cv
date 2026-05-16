@@ -1,0 +1,28 @@
+# Uses the official PyTorch + CUDA 12 base (already contains torch and torchvision)
+ARG BASE_IMAGE=quay.io/jupyter/pytorch-notebook:cuda12-latest
+FROM ${BASE_IMAGE}
+
+USER root
+
+# Install system libraries required by OpenCV to prevent missing .so errors
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy uv binaries for ultra-fast package installation
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+# Install the general PyTorch Computer Vision stack and Hub extensions
+RUN uv pip install --no-cache --system \
+    opencv-python-headless \
+    albumentations \
+    timm \
+    kornia \
+    scikit-image \
+    pycocotools \
+    jupyter-scheduler \
+    jupyter-resource-usage \
+    jupyterlab-nvdashboard
+
+USER ${NB_UID}

@@ -49,9 +49,6 @@ sudo dnf install -y nvidia-container-toolkit
 # 7. Configure Docker and restart
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
-
-# 8. Final verification — Docker can see the GPU
-docker run --rm --gpus all nvidia/cuda:12.0-base-ubuntu22.04 nvidia-smi
 ```
 
 ### Step 3: Setup Quota-Limited Storage (Loopback Disk)
@@ -81,9 +78,17 @@ df -h /jupyterhub
 ### Step 4: Build the Single-User Images
 
 ```bash
-docker build -t custom-scipy-uv:latest --build-arg BASE_IMAGE=jupyter/scipy-notebook:latest -f Dockerfile.singleuser .
-docker build -t custom-pytorch-uv:cuda12-latest --build-arg BASE_IMAGE=quay.io/jupyter/pytorch-notebook:cuda12-latest -f Dockerfile.singleuser .
-docker build -t custom-tensorflow-uv:cuda-latest --build-arg BASE_IMAGE=quay.io/jupyter/tensorflow-notebook:cuda-latest -f Dockerfile.singleuser .
+# 1. The Tiny Base (for uv sync / pyproject.toml workflows)
+docker build -t custom-tiny-base:latest --build-arg BASE_IMAGE=quay.io/jupyter/minimal-notebook:latest -f Dockerfile.tiny_base .
+
+# 2. LSD Custom Environment (PyTorch 2.10 / CUDA 12.8)
+docker build -t custom-lsd-env:cuda12.8 -f Dockerfile.lsd .
+
+# 3. Computer Vision (ComputerVision - PyTorch based)
+docker build -t custom-pytorch-cv:cuda12 -f Dockerfile.pytorch_cv .
+
+# 6. Computer Vision (YOLO & SAM - PyTorch based)
+docker build -t custom-yolo-sam:cuda12 -f Dockerfile.yolo_sam .
 ```
 
 ### Step 5: Start the Hub!
