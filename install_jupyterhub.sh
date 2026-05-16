@@ -83,22 +83,34 @@ step_nvidia() {
   dnf install -y epel-release
   /usr/bin/crb enable
 
+  log_step "Installing required build libraries and tools..."
+  dnf install -y \
+    gcc \
+    gcc-c++ \
+    make \
+    git \
+    perl \
+    python3 \
+    python3-pip \
+    curl \
+    wget \
+    tar \
+    bzip2 \
+    which \
+    pciutils \
+    pkg-config \
+    elfutils-libelf-devel \
+    libglvnd-devel \
+    dkms \
+    kernel-devel-$(uname -r) \
+    kernel-headers-$(uname -r)
+
   log_step "Adding CUDA repository..."
   dnf config-manager --add-repo \
     https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo
 
   log_step "Cleaning DNF cache and refreshing metadata..."
   dnf clean all && dnf makecache
-
-  log_step "Installing kernel headers, DKMS, and build tools..."
-  dnf install -y \
-    kernel-devel-$(uname -r) \
-    kernel-headers-$(uname -r) \
-    dkms \
-    gcc \
-    make \
-    perl \
-    elfutils-libelf-devel
 
   log_step "Installing nvidia-driver and nvidia-driver-cuda..."
   dnf install -y nvidia-driver nvidia-driver-cuda
