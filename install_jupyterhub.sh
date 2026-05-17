@@ -28,7 +28,7 @@ DISK_SIZE="50G"
 
 
 IMAGES=(
-  "custom-tiny-base:latest|--build-arg BASE_IMAGE=quay.io/jupyter/minimal-notebook:latest -f Dockerfile.tiny_base ."
+  "custom-base:latest|-f Dockerfile.base ."
 )
 
 # ── Guards ────────────────────────────────────────────────────────────────────

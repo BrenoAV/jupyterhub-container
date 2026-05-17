@@ -1,5 +1,6 @@
-# minimal-notebook is very lightweight compared to the others
-ARG BASE_IMAGE=quay.io/jupyter/minimal-notebook:latest
+ARG CUDA_VERSION=12.3.2
+ARG CUDNN_VERSION=9
+ARG BASE_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-ubuntu22.04
 FROM ${BASE_IMAGE}
 USER root
 
@@ -8,6 +9,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # 2. Install ONLY the core Jupyter extensions globally
 RUN pip install --no-cache \
+    jupyterhub \
+    jupyterlab \
+    notebook \
     jupyter-scheduler \
     jupyter-resource-usage \
     jupyterlab-nvdashboard
@@ -18,8 +22,6 @@ RUN chmod +x /usr/local/bin/kernel.sh
 RUN ln -s /usr/local/bin/kernel.sh /usr/local/bin/kernel
 
 # 4. Show the kernel help message automatically when opening a terminal
-# We write to /etc/bash.bashrc because /home/jovyan gets overwritten by the volume mount
 RUN echo -e '\n# Display kernel script usage\necho -e "\\033[1;33m  ℹ  Welcome! Manage your custom environments using the kernel tool:\\033[0m"\nkernel\n' >> /etc/bash.bashrc
 
-# Switch to the default Jupyter user (jovyan) at the very end
 USER ${NB_UID}
