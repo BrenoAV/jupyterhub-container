@@ -35,12 +35,28 @@ RUN pip install --no-cache \
     jupyterlab-nvdashboard \
     ipykernel
 
-# 3. Bake in the kernel creation helper
-COPY kernel.sh /usr/local/bin/kernel.sh
-RUN chmod +x /usr/local/bin/kernel.sh
-RUN ln -s /usr/local/bin/kernel.sh /usr/local/bin/kernel
+# 3. Create the jovyan user so UID 1000 has a real /etc/passwd entry.
+#    GID 100 (users) already exists on Ubuntu — we just add jovyan to it.
+RUN groupadd --system --gid 1000 jovyan 2>/dev/null || true \
+ && useradd  --uid 1000 --gid 100 \
+             --groups jovyan \
+             --no-log-init \
+             --create-home \
+             --home-dir /home/jovyan \
+             --shell /bin/bash \
+             jovyan \
+ && mkdir -p /home/jovyan \
+ && chown -R 1000:100 /home/jovyan
 
-# 4. Show the kernel help message automatically when opening a terminal
+# 4. Bake in the kernel creation helper
+COPY kernel.sh /usr/local/bin/kernel.sh
+RUN chmod +x /usr/local/bin/kernel.sh \
+ && ln -s /usr/local/bin/kernel.sh /usr/local/bin/kernel
+
+# 5. Show the kernel help message automatically when opening a terminal
 RUN echo -e '\n# Display kernel script usage\necho -e "\\033[1;33m  ℹ  Welcome! Manage your custom environments using the kernel tool:\\033[0m"\nkernel\n' >> /etc/bash.bashrc
 
-USER 1000
+USER jovyan
+WORKDIR /home/jovyan
+
+CMD ["jupyterhub-singleuser"]
