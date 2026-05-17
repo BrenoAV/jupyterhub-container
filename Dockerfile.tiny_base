@@ -14,7 +14,8 @@ RUN pip install --no-cache \
     ipykernel
 
 # 3. Bake in the kernel creation helper
-COPY create_kernel.sh /usr/local/bin/create_kernel.sh
-RUN chmod +x /usr/local/bin/create_kernel.sh
+COPY create_kernel.sh /usr/local/bin/kernel.sh
+RUN chmod +x /usr/local/bin/kernel.sh
+RUN ln -s /usr/local/bin/kernel.sh /usr/local/bin/kernel
 
 USER ${NB_UID}
