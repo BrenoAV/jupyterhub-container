@@ -30,7 +30,7 @@ c.DockerSpawner.args = [
 c.DockerSpawner.options_form = """
 <label for="profile">Select Server Profile:</label>
 <select name="profile" class="form-control">
-  <option value="cpu">🛠️ CPU Only (Data Prep & Coding) - 16GB RAM</option>
+  <option value="cpu">🛠️ CPU Only (Data Prep & Coding) - 32GB RAM</option>
   <option value="gpu0">🚀 GPU 0 (1x A100) - 32GB RAM</option>
   <option value="gpu1">🚀 GPU 1 (1x A100) - 32GB RAM</option>
 </select>
@@ -62,7 +62,7 @@ async def pre_spawn_hook(spawner):
 
     if profile == 'gpu0':
         spawner.cpu_limit = 4.0
-        spawner.mem_limit = '16G'
+        spawner.mem_limit = '32G'
         spawner.extra_host_config = {
             "device_requests": [
                 docker.types.DeviceRequest(device_ids=["0"], capabilities=[["gpu"]])
@@ -72,7 +72,7 @@ async def pre_spawn_hook(spawner):
         
     elif profile == 'gpu1':
         spawner.cpu_limit = 4.0
-        spawner.mem_limit = '16G'
+        spawner.mem_limit = '32G'
         spawner.extra_host_config = {
             "device_requests": [
                 docker.types.DeviceRequest(device_ids=["1"], capabilities=[["gpu"]])
@@ -82,7 +82,7 @@ async def pre_spawn_hook(spawner):
         
     else:  # Fallback to standard CPU
         spawner.cpu_limit = 4.0
-        spawner.mem_limit = '16G'
+        spawner.mem_limit = '32G'
         spawner.extra_host_config = {"device_requests": []}
         spawner.environment.update({'GPU_ENABLED': 'False'})
 

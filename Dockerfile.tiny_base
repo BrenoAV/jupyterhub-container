@@ -17,9 +17,9 @@ COPY kernel.sh /usr/local/bin/kernel.sh
 RUN chmod +x /usr/local/bin/kernel.sh
 RUN ln -s /usr/local/bin/kernel.sh /usr/local/bin/kernel
 
-# Switch to the default Jupyter user (jovyan)
-USER ${NB_UID}
-
 # 4. Show the kernel help message automatically when opening a terminal
-RUN touch ~/.bashrc
-RUN echo -e '\n# Display kernel script usage\necho -e "\\033[1;33m  ℹ  Welcome! Manage your custom environments using the kernel tool:\\033[0m"\nkernel\n' >> ~/.bashrc
+# We write to /etc/bash.bashrc because /home/jovyan gets overwritten by the volume mount
+RUN echo -e '\n# Display kernel script usage\necho -e "\\033[1;33m  ℹ  Welcome! Manage your custom environments using the kernel tool:\\033[0m"\nkernel\n' >> /etc/bash.bashrc
+
+# Switch to the default Jupyter user (jovyan) at the very end
+USER ${NB_UID}
