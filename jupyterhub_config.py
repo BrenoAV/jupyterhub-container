@@ -1,8 +1,7 @@
 import os
 import docker
 
-# ── Data Persistence (Fix for docker compose down) ────────────────────────────
-# Forces JupyterHub to save the database and cookies in the persistent volume
+# ── Data Persistence ──────────────────────────────────────────────────────────
 c.JupyterHub.db_url = 'sqlite:////srv/jupyterhub/data/jupyterhub.sqlite'
 c.JupyterHub.cookie_secret_file = '/srv/jupyterhub/data/jupyterhub_cookie_secret'
 
@@ -23,64 +22,96 @@ c.DockerSpawner.args = [
     "--ResourceUseDisplay.track_disk_usage=True"
 ]
 
-# ── Resource & GPU Profiles --------------------------─────────────────────────
-# Users choose their resources when they log in. 
-# Limits and GPU allocations are handled here instead of globally.
+# ── Spawner ───────────────────────────────────────────────────────────────────
+c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
+c.DockerSpawner.image = "custom-pytorch:latest"  # fallback; overridden by hook
+c.DockerSpawner.pull_policy = "never"
+
+# ── Profiles ──────────────────────────────────────────────────────────────────
+# Each GPU profile lets the user pick WHICH physical GPU (0 or 1) they want.
+# Framework (PyTorch / TensorFlow) is chosen first, then the GPU slot.
 
 c.DockerSpawner.options_form = """
-<label for="profile">Select Server Profile:</label>
-<select name="profile" class="form-control">
-  <option value="cpu">🛠️ CPU Only (Data Prep & Coding) - 32GB RAM</option>
-  <option value="gpu0">🚀 GPU 0 (1x A100) - 32GB RAM</option>
-  <option value="gpu1">🚀 GPU 1 (1x A100) - 32GB RAM</option>
-</select>
+<style>
+  .profile-group { margin-bottom: 1rem; }
+  .profile-group label { font-weight: 600; display: block; margin-bottom: .4rem; }
+</style>
+
+<div class="profile-group">
+  <label for="profile">Select Server Profile:</label>
+  <select name="profile" class="form-control">
+    <optgroup label="── PyTorch + CUDA 12 ──────────────────">
+      <option value="pytorch_gpu0">🔥 PyTorch — GPU 0 (1× A100) · 32 GB RAM</option>
+      <option value="pytorch_gpu1">🔥 PyTorch — GPU 1 (1× A100) · 32 GB RAM</option>
+    </optgroup>
+    <optgroup label="── TensorFlow + CUDA ──────────────────">
+      <option value="tf_gpu0">🧠 TensorFlow — GPU 0 (1× A100) · 32 GB RAM</option>
+      <option value="tf_gpu1">🧠 TensorFlow — GPU 1 (1× A100) · 32 GB RAM</option>
+    </optgroup>
+    <optgroup label="── CPU Only ───────────────────────────">
+      <option value="cpu">🛠️ CPU Only (scipy-notebook) · 32 GB RAM</option>
+    </optgroup>
+  </select>
+</div>
 """
 
 def options_from_form(formdata):
-    """Extract the user's choice from the dropdown menu."""
-    # formdata is a dictionary of lists: e.g., {'profile': ['gpu0']}
-    return {
-        'profile': formdata.get('profile', ['cpu'])[0]
-    }
+    return {'profile': formdata.get('profile', ['cpu'])[0]}
 
 c.DockerSpawner.options_from_form = options_from_form
 
-# ── 3. Apply the Resources (PRE-SPAWN HOOK) ───────────────────────────────────
+# ── Pre-spawn hook: image + resources per profile ─────────────────────────────
 async def pre_spawn_hook(spawner):
-    # --- FOLDER CREATION LOGIC ---
+    # --- Per-user folder ---
     username = spawner.user.name
     host_path = f"/jupyterhub/data/{username}"
-
     if not os.path.exists(host_path):
         os.makedirs(host_path, mode=0o755, exist_ok=True)
-        # UID 1000 = jovyan, GID 100 = users (standard Jupyter Docker stacks)
-        os.chown(host_path, 1000, 100)
+        os.chown(host_path, 1000, 100)  # jovyan:users
 
-    # --- APPLY SELECTED PROFILE SETTINGS ---
-    # Retrieve what the user selected in the dropdown
     profile = spawner.user_options.get('profile', 'cpu')
 
-    if profile == 'gpu0':
-        spawner.cpu_limit = 4.0
-        spawner.mem_limit = '32G'
-        spawner.extra_host_config = {
+    # Shared GPU config builder
+    def gpu_config(device_id):
+        return {
             "device_requests": [
-                docker.types.DeviceRequest(device_ids=["0"], capabilities=[["gpu"]])
+                docker.types.DeviceRequest(
+                    device_ids=[str(device_id)],
+                    capabilities=[["gpu"]]
+                )
             ]
         }
-        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
-        
-    elif profile == 'gpu1':
+
+    if profile == 'pytorch_gpu0':
+        spawner.image = "custom-pytorch:latest"
         spawner.cpu_limit = 4.0
         spawner.mem_limit = '32G'
-        spawner.extra_host_config = {
-            "device_requests": [
-                docker.types.DeviceRequest(device_ids=["1"], capabilities=[["gpu"]])
-            ]
-        }
+        spawner.extra_host_config = gpu_config(0)
         spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
-        
-    else:  # Fallback to standard CPU
+
+    elif profile == 'pytorch_gpu1':
+        spawner.image = "custom-pytorch:latest"
+        spawner.cpu_limit = 4.0
+        spawner.mem_limit = '32G'
+        spawner.extra_host_config = gpu_config(1)
+        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
+
+    elif profile == 'tf_gpu0':
+        spawner.image = "custom-tensorflow:latest"
+        spawner.cpu_limit = 4.0
+        spawner.mem_limit = '32G'
+        spawner.extra_host_config = gpu_config(0)
+        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
+
+    elif profile == 'tf_gpu1':
+        spawner.image = "custom-tensorflow:latest"
+        spawner.cpu_limit = 4.0
+        spawner.mem_limit = '32G'
+        spawner.extra_host_config = gpu_config(1)
+        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
+
+    else:  # cpu
+        spawner.image = "custom-cpu:latest"
         spawner.cpu_limit = 4.0
         spawner.mem_limit = '32G'
         spawner.extra_host_config = {"device_requests": []}
@@ -88,33 +119,22 @@ async def pre_spawn_hook(spawner):
 
 c.Spawner.pre_spawn_hook = pre_spawn_hook
 
-# ── Idle Culling Configuration ────────────────────────────────────────────────
+# ── Idle Culling ──────────────────────────────────────────────────────────────
 c.JupyterHub.services = [
     {
         "name": "idle-culler",
         "admin": True,
         "command": [
-            "python3",
-            "-m",
-            "jupyterhub_idle_culler",
-            "--timeout=3600",    # 1 hour (cut down since GPUs are high-demand)
-            "--cull-every=60",   # check every 1 minute
-            "--max-age=36000"    # 10 hours max absolute age
+            "python3", "-m", "jupyterhub_idle_culler",
+            "--timeout=3600",
+            "--cull-every=60",
+            "--max-age=36000"
         ],
     }
 ]
 
-# ── Spawner ───────────────────────────────────────────────────────────────────
-c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
-c.DockerSpawner.image = "custom-tiny-base:latest"
-
-# Prevent Docker from trying to pull local-only images from a registry
-c.DockerSpawner.pull_policy = "never"
-
 # ── Volumes ───────────────────────────────────────────────────────────────────
 c.DockerSpawner.notebook_dir = "/home/jovyan"
-
-# Capital Z = private SELinux label per container (correct for Rocky Linux user isolation)
 c.DockerSpawner.volumes = {
     "/jupyterhub/data/{username}": {"bind": "/home/jovyan", "mode": "rw,Z"}
 }
@@ -126,7 +146,7 @@ c.JupyterHub.hub_ip = "0.0.0.0"
 c.JupyterHub.hub_connect_ip = "jupyterhub"
 
 # ── Timeouts & Cleanup ────────────────────────────────────────────────────────
-c.DockerSpawner.remove = True  # auto-remove stopped containers
+c.DockerSpawner.remove = True
 c.Spawner.default_url = "/lab"
 c.Spawner.http_timeout = 120
 c.Spawner.start_timeout = 300
