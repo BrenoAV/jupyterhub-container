@@ -92,6 +92,11 @@ c.DockerSpawner.use_internal_ip = True
 c.JupyterHub.hub_ip = "0.0.0.0"
 c.JupyterHub.hub_connect_ip = "jupyterhub"
 
+# ── Data Persistence ──────────────────────────────────────────────────────────
+# Force JupyterHub to save its state inside the mounted Docker volume
+c.JupyterHub.db_url = 'sqlite:////srv/jupyterhub/data/jupyterhub.sqlite'
+c.JupyterHub.cookie_secret_file = '/srv/jupyterhub/data/jupyterhub_cookie_secret'
+
 # ── Timeouts & Cleanup ────────────────────────────────────────────────────────
 c.DockerSpawner.remove = True  # auto-remove stopped containers
 c.Spawner.default_url = "/lab"
