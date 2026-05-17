@@ -28,8 +28,7 @@ DISK_SIZE="50G"
 
 
 IMAGES=(
-  "custom-gpu:latest|-f Dockerfile.gpu ."
-  "custom-cpu:latest|-f Dockerfile.cpu ."
+  "custom-base:latest|-f Dockerfile.base ."
 )
 
 # ── Guards ────────────────────────────────────────────────────────────────────
