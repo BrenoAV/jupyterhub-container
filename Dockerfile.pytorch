@@ -1,5 +1,5 @@
 # ── GPU image: pytorch-notebook with CUDA 12 + cuDNN (official Jupyter stack) ─
-FROM quay.io/jupyter/pytorch-notebook:cuda12-python-3.11
+FROM quay.io/jupyter/pytorch-notebook:cuda12-latest
 
 USER root
 
