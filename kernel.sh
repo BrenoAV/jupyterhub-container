@@ -2,70 +2,85 @@
 # =============================================================================
 #  kernel.sh — Manage Jupyter kernels backed by a local .venv
 #
-#  Usage:
-#    kernel --create <kernel-name> [display-name]
-#    kernel --delete <kernel-name>   (alias: --remove)
+#  To keep the environment activated in your terminal, SOURCE the script:
+#    source kernel.sh --create <kernel-name> [display-name]
 #
-#  Examples:
-#    kernel --create myenv
-#    kernel --create myenv "My Project (Python 3)"
-#    kernel --delete myenv
-#    kernel --remove myenv
+#  To run normally (will NOT activate in current shell):
+#    ./kernel.sh --create <kernel-name> [display-name]
+#    ./kernel.sh --delete <kernel-name>
 # =============================================================================
-set -euo pipefail
+
+# Detect if the script is being sourced
+(return 0 2>/dev/null) && _SOURCED=true || _SOURCED=false
+
+# Only apply strict modes if executed as a subshell to avoid closing the parent shell
+if [[ "$_SOURCED" == false ]]; then
+  set -euo pipefail
+fi
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 GREEN='\033[0;32m'; CYAN='\033[0;36m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; RESET='\033[0m'
 log_step() { echo -e "${CYAN}  ▶  $1${RESET}"; }
 log_ok()   { echo -e "${GREEN}  ✔  $1${RESET}"; }
 log_info() { echo -e "${YELLOW}  ℹ  $1${RESET}"; }
-die()      { echo -e "${RED}  ✖  $1${RESET}" >&2; exit 1; }
+
+# Safe exit function: Returns if sourced, exits if executed
+quit() {
+  [[ "$_SOURCED" == true ]] && return "$1" || exit "$1"
+}
 
 # ── Usage ─────────────────────────────────────────────────────────────────────
 usage() {
+  local SCRIPT_NAME
+  SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
   echo -e ""
   echo -e "${BOLD}  Usage:${RESET}"
-  echo -e "    $(basename "$0") --create <kernel-name> [display-name]"
-  echo -e "    $(basename "$0") --delete <kernel-name>"
-  echo -e "    $(basename "$0") --remove <kernel-name>"
+  echo -e "    source ${SCRIPT_NAME} --create <kernel-name> [display-name]"
+  echo -e "    ./${SCRIPT_NAME} --delete <kernel-name>"
+  echo -e "    ./${SCRIPT_NAME} --remove <kernel-name>"
   echo -e ""
   echo -e "${BOLD}  Examples:${RESET}"
-  echo -e "    $(basename "$0") --create myenv"
-  echo -e "    $(basename "$0") --create myenv \"My Project (Python 3)\""
-  echo -e "    $(basename "$0") --delete myenv"
+  echo -e "    source ${SCRIPT_NAME} --create myenv"
+  echo -e "    source ${SCRIPT_NAME} --create myenv \"My Project (Python 3)\""
+  echo -e "    ./${SCRIPT_NAME} --delete myenv"
   echo -e ""
-  exit 1
+  quit 1
 }
 
 # ── Subcommand: create ────────────────────────────────────────────────────────
 cmd_create() {
   local KERNEL_NAME="${1:-}"
   local DISPLAY_NAME="${2:-$KERNEL_NAME}"
-  local VENV_DIR="$(pwd)/.venv"
 
-  [[ -z "$KERNEL_NAME" ]] && die "--create requires a kernel name." && usage
+  if [[ -z "$KERNEL_NAME" ]]; then
+    echo -e "${RED}  ✖  --create requires a kernel name.${RESET}" >&2
+    usage
+  fi
 
-  command -v python3 &>/dev/null || die "'python3' not found."
+  # Dynamically generate the folder name based on the kernel name
+  local VENV_DIR="$(pwd)/.${KERNEL_NAME}_venv"
+
+  command -v python3 &>/dev/null || { echo -e "${RED}  ✖  'python3' not found.${RESET}" >&2; quit 1; }
 
   echo -e "\n${BOLD}  Creating kernel '${KERNEL_NAME}' → ${VENV_DIR}${RESET}\n"
 
   # Create venv
   if [[ -d "$VENV_DIR" ]]; then
-    log_step ".venv already exists at ${VENV_DIR} — reusing."
+    log_step "Environment folder already exists at ${VENV_DIR} — reusing."
   else
-    log_step "Creating venv at ${VENV_DIR}..."
+    log_step "Creating virtual environment at ${VENV_DIR}..."
     python3 -m venv "$VENV_DIR"
-    log_ok "venv created."
+    log_ok "Environment created."
   fi
 
   # Activate venv
-  log_step "Activating venv..."
+  log_step "Activating environment..."
   # shellcheck disable=SC1091
   source "$VENV_DIR/bin/activate"
-  log_ok "venv activated. (Python: $(python3 --version))"
+  log_ok "Environment activated. (Python: $(python3 --version))"
 
   # Install ipykernel
-  log_step "Installing ipykernel into the venv..."
+  log_step "Installing ipykernel into the environment..."
   pip install --no-cache-dir ipykernel
   log_ok "ipykernel installed."
 
@@ -77,29 +92,27 @@ cmd_create() {
     --display-name "$DISPLAY_NAME"
   log_ok "Kernel registered."
 
-  # Deactivate venv
-  deactivate
-  log_ok "venv deactivated."
-
   # Summary
   echo ""
   echo -e "${BOLD}  Done!${RESET}"
-  echo -e "  venv       : ${VENV_DIR}"
+  echo -e "  venv dir   : ${VENV_DIR}"
   echo -e "  kernel name: ${KERNEL_NAME}"
   echo -e "  display    : ${DISPLAY_NAME}"
   echo ""
-  echo -e "${BOLD}  Quick reference:${RESET}"
-  echo -e "  ${CYAN}# Install a package into the venv:${RESET}"
-  echo -e "    source ${VENV_DIR}/bin/activate && pip install <package> && deactivate"
-  echo -e ""
-  echo -e "  ${CYAN}# Activate the venv manually:${RESET}"
-  echo -e "    source ${VENV_DIR}/bin/activate"
-  echo -e ""
-  echo -e "  ${CYAN}# Deactivate when done:${RESET}"
-  echo -e "    deactivate"
+  
+  if [[ "$_SOURCED" == true ]]; then
+    echo -e "  ${GREEN}✔ The virtual environment is now actively running in your terminal.${RESET}"
+    echo -e "  ${CYAN}# Deactivate when done:${RESET}"
+    echo -e "    deactivate"
+  else
+    echo -e "  ${YELLOW}ℹ Because you executed this script normally, the venv is NOT active in your shell.${RESET}"
+    echo -e "  ${CYAN}# To activate the environment manually, run:${RESET}"
+    echo -e "    source ${VENV_DIR}/bin/activate"
+  fi
+  
   echo -e ""
   echo -e "  ${CYAN}# Delete this kernel later:${RESET}"
-  echo -e "    $(basename "$0") --delete ${KERNEL_NAME}"
+  echo -e "    ./$(basename "${BASH_SOURCE[0]:-$0}") --delete ${KERNEL_NAME}"
   echo -e ""
   echo -e "  ${YELLOW}  ℹ  Reload JupyterLab (F5) if it is already open.${RESET}\n"
 }
@@ -107,9 +120,14 @@ cmd_create() {
 # ── Subcommand: delete ────────────────────────────────────────────────────────
 cmd_delete() {
   local KERNEL_NAME="${1:-}"
-  local VENV_DIR="$(pwd)/.venv"
 
-  [[ -z "$KERNEL_NAME" ]] && die "--delete requires a kernel name." && usage
+  if [[ -z "$KERNEL_NAME" ]]; then
+    echo -e "${RED}  ✖  --delete requires a kernel name.${RESET}" >&2
+    usage
+  fi
+
+  # Match the dynamically generated folder name
+  local VENV_DIR="$(pwd)/.${KERNEL_NAME}_venv"
 
   echo -e "\n${BOLD}  Deleting kernel '${KERNEL_NAME}'${RESET}\n"
 
@@ -125,13 +143,13 @@ cmd_delete() {
     log_info "Kernel '${KERNEL_NAME}' not found in Jupyter registry — skipping unregister."
   fi
 
-  # Remove .venv if it exists in the current directory
+  # Remove dynamic .venv if it exists
   if [[ -d "$VENV_DIR" ]]; then
-    log_step "Removing venv at ${VENV_DIR}..."
+    log_step "Removing environment folder at ${VENV_DIR}..."
     rm -rf "$VENV_DIR"
-    log_ok "venv removed."
+    log_ok "Environment folder removed."
   else
-    log_info "No .venv found at ${VENV_DIR} — skipping venv removal."
+    log_info "No environment found at ${VENV_DIR} — skipping folder removal."
   fi
 
   echo ""
@@ -140,7 +158,7 @@ cmd_delete() {
 }
 
 # ── Entrypoint ────────────────────────────────────────────────────────────────
-[[ $# -lt 1 ]] && usage
+if [[ $# -lt 1 ]]; then usage; fi
 
 SUBCOMMAND="$1"
 shift
@@ -149,7 +167,7 @@ case "$SUBCOMMAND" in
   --create)           cmd_create "$@" ;;
   --delete|--remove)  cmd_delete "$@" ;;
   *)
-    die "Unknown option '${SUBCOMMAND}'."
+    echo -e "${RED}  ✖  Unknown option '${SUBCOMMAND}'.${RESET}" >&2
     usage
     ;;
 esac

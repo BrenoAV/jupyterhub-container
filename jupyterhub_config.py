@@ -72,12 +72,7 @@ c.JupyterHub.services = [
 
 # ── Spawner ───────────────────────────────────────────────────────────────────
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
-c.DockerSpawner.allowed_images = {
-    "Python Base (Bring Your Own Env)":         "custom-tiny-base:latest",
-    "Computer Vision: General PyTorch (GPU)":   "custom-pytorch-cv:cuda12",
-    "Computer Vision: YOLO & SAM (GPU)":        "custom-yolo-sam:cuda12",
-    "LSD Environment (PyTorch 2.10)":           "custom-lsd-env:cuda12.8",
-}
+c.DockerSpawner.image = "custom-tiny-base:latest"
 
 # Prevent Docker from trying to pull local-only images from a registry
 c.DockerSpawner.pull_policy = "never"
