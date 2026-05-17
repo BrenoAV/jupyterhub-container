@@ -26,62 +26,28 @@ c.DockerSpawner.args = [
 # ── Resource & GPU Profiles --------------------------─────────────────────────
 # Users choose their resources when they log in. 
 # Limits and GPU allocations are handled here instead of globally.
-c.DockerSpawner.profile_list = [
-    {
-        'display_name': '🛠️ CPU Only (Data Prep & Coding)',
-        'description': '4 CPUs, 16GB RAM. Best for writing code and lightweight processing.',
-        'default': True,
-        'spawner_override': {
-            'cpu_limit': 4.0,
-            'mem_limit': '16G',
-            'extra_host_config': {
-                'device_requests': []
-            },
-            'environment': {'GPU_ENABLED': 'False'}
-        }
-    },
-    {
-        'display_name': '🚀 GPU 0 (1x A100)',
-        'description': '4 CPUs, 32GB RAM. Locks you to the first A100 GPU.',
-        'spawner_override': {
-            'cpu_limit': 4.0,
-            'mem_limit': '16G',
-            'extra_host_config': {
-                'device_requests': [
-                    docker.types.DeviceRequest(device_ids=["0"], capabilities=[["gpu"]])
-                ]
-            },
-            'environment': {
-                'GPU_ENABLED': 'True', 
-                'CUDA_VISIBLE_DEVICES': '0'
-            }
-        }
-    },
-    {
-        'display_name': '🚀 GPU 1 (1x A100)',
-        'description': '4 CPUs, 32GB RAM. Locks you to the second A100 GPU.',
-        'spawner_override': {
-            'cpu_limit': 4.0,
-            'mem_limit': '16G',
-            'extra_host_config': {
-                'device_requests': [
-                    docker.types.DeviceRequest(device_ids=["1"], capabilities=[["gpu"]])
-                ]
-            },
-            # Note: CUDA_VISIBLE_DEVICES is '0' here too. When Docker maps a single 
-            # specific GPU to a container, the container sees it internally as GPU 0.
-            'environment': {
-                'GPU_ENABLED': 'True', 
-                'CUDA_VISIBLE_DEVICES': '0'
-            } 
-        }
-    }
-]
 
-# ── PRE-SPAWN HOOK (Folder Creation Only) ─────────────────────────────────────
-# Must be async — DockerSpawner requires it.
-# GPU logic is removed from here because profile_list handles it now.
+c.DockerSpawner.options_form = """
+<label for="profile">Select Server Profile:</label>
+<select name="profile" class="form-control">
+  <option value="cpu">🛠️ CPU Only (Data Prep & Coding) - 16GB RAM</option>
+  <option value="gpu0">🚀 GPU 0 (1x A100) - 32GB RAM</option>
+  <option value="gpu1">🚀 GPU 1 (1x A100) - 32GB RAM</option>
+</select>
+"""
+
+def options_from_form(formdata):
+    """Extract the user's choice from the dropdown menu."""
+    # formdata is a dictionary of lists: e.g., {'profile': ['gpu0']}
+    return {
+        'profile': formdata.get('profile', ['cpu'])[0]
+    }
+
+c.DockerSpawner.options_from_form = options_from_form
+
+# ── 3. Apply the Resources (PRE-SPAWN HOOK) ───────────────────────────────────
 async def pre_spawn_hook(spawner):
+    # --- FOLDER CREATION LOGIC ---
     username = spawner.user.name
     host_path = f"/jupyterhub/data/{username}"
 
@@ -89,6 +55,36 @@ async def pre_spawn_hook(spawner):
         os.makedirs(host_path, mode=0o755, exist_ok=True)
         # UID 1000 = jovyan, GID 100 = users (standard Jupyter Docker stacks)
         os.chown(host_path, 1000, 100)
+
+    # --- APPLY SELECTED PROFILE SETTINGS ---
+    # Retrieve what the user selected in the dropdown
+    profile = spawner.user_options.get('profile', 'cpu')
+
+    if profile == 'gpu0':
+        spawner.cpu_limit = 4.0
+        spawner.mem_limit = '16G'
+        spawner.extra_host_config = {
+            "device_requests": [
+                docker.types.DeviceRequest(device_ids=["0"], capabilities=[["gpu"]])
+            ]
+        }
+        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
+        
+    elif profile == 'gpu1':
+        spawner.cpu_limit = 4.0
+        spawner.mem_limit = '16G'
+        spawner.extra_host_config = {
+            "device_requests": [
+                docker.types.DeviceRequest(device_ids=["1"], capabilities=[["gpu"]])
+            ]
+        }
+        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
+        
+    else:  # Fallback to standard CPU
+        spawner.cpu_limit = 4.0
+        spawner.mem_limit = '16G'
+        spawner.extra_host_config = {"device_requests": []}
+        spawner.environment.update({'GPU_ENABLED': 'False'})
 
 c.Spawner.pre_spawn_hook = pre_spawn_hook
 
