@@ -28,8 +28,7 @@ DISK_SIZE="50G"
 
 
 IMAGES=(
-  "custom-pytorch:latest|-f Dockerfile.pytorch ."
-  "custom-tensorflow:latest|-f Dockerfile.tensorflow ."
+  "custom-gpu:latest|-f Dockerfile.gpu ."
   "custom-cpu:latest|-f Dockerfile.cpu ."
 )
 

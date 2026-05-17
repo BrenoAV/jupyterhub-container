@@ -24,12 +24,11 @@ c.DockerSpawner.args = [
 
 # ── Spawner ───────────────────────────────────────────────────────────────────
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
-c.DockerSpawner.image = "custom-pytorch:latest"  # fallback; overridden by hook
+c.DockerSpawner.image = "custom-cpu:latest"  # Default fallback
 c.DockerSpawner.pull_policy = "never"
 
 # ── Profiles ──────────────────────────────────────────────────────────────────
-# Each GPU profile lets the user pick WHICH physical GPU (0 or 1) they want.
-# Framework (PyTorch / TensorFlow) is chosen first, then the GPU slot.
+# Simplified to generic hardware slots. Users install frameworks via conda.
 
 c.DockerSpawner.options_form = """
 <style>
@@ -40,15 +39,11 @@ c.DockerSpawner.options_form = """
 <div class="profile-group">
   <label for="profile">Select Server Profile:</label>
   <select name="profile" class="form-control">
-    <optgroup label="── PyTorch + CUDA 12 ──────────────────">
-      <option value="pytorch_gpu0">🔥 PyTorch — GPU 0 (1× A100) · 32 GB RAM</option>
-      <option value="pytorch_gpu1">🔥 PyTorch — GPU 1 (1× A100) · 32 GB RAM</option>
+    <optgroup label="── GPU Environment (Bring Your Own Framework) ─">
+      <option value="gpu0">🚀 GPU 1 (CUDA Base) · 32 GB RAM</option>
+      <option value="gpu1">🚀 GPU 2 (CUDA Base) · 32 GB RAM</option>
     </optgroup>
-    <optgroup label="── TensorFlow + CUDA ──────────────────">
-      <option value="tf_gpu0">🧠 TensorFlow — GPU 0 (1× A100) · 32 GB RAM</option>
-      <option value="tf_gpu1">🧠 TensorFlow — GPU 1 (1× A100) · 32 GB RAM</option>
-    </optgroup>
-    <optgroup label="── CPU Only ───────────────────────────">
+    <optgroup label="── CPU Only ───────────────────────────────────">
       <option value="cpu">🛠️ CPU Only (scipy-notebook) · 32 GB RAM</option>
     </optgroup>
   </select>
@@ -62,7 +57,7 @@ c.DockerSpawner.options_from_form = options_from_form
 
 # ── Pre-spawn hook: image + resources per profile ─────────────────────────────
 async def pre_spawn_hook(spawner):
-    # --- Per-user folder ---
+    # Ensure per-user folder exists on host
     username = spawner.user.name
     host_path = f"/jupyterhub/data/{username}"
     if not os.path.exists(host_path):
@@ -71,7 +66,7 @@ async def pre_spawn_hook(spawner):
 
     profile = spawner.user_options.get('profile', 'cpu')
 
-    # Shared GPU config builder
+    # Shared GPU config builder via Docker API
     def gpu_config(device_id):
         return {
             "device_requests": [
@@ -82,32 +77,20 @@ async def pre_spawn_hook(spawner):
             ]
         }
 
-    if profile == 'pytorch_gpu0':
-        spawner.image = "custom-pytorch:latest"
+    if profile == 'gpu0':
+        spawner.image = "custom-gpu:latest"
         spawner.cpu_limit = 4.0
         spawner.mem_limit = '32G'
         spawner.extra_host_config = gpu_config(0)
         spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
 
-    elif profile == 'pytorch_gpu1':
-        spawner.image = "custom-pytorch:latest"
+    elif profile == 'gpu1':
+        spawner.image = "custom-gpu:latest"
         spawner.cpu_limit = 4.0
         spawner.mem_limit = '32G'
         spawner.extra_host_config = gpu_config(1)
-        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
-
-    elif profile == 'tf_gpu0':
-        spawner.image = "custom-tensorflow:latest"
-        spawner.cpu_limit = 4.0
-        spawner.mem_limit = '32G'
-        spawner.extra_host_config = gpu_config(0)
-        spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
-
-    elif profile == 'tf_gpu1':
-        spawner.image = "custom-tensorflow:latest"
-        spawner.cpu_limit = 4.0
-        spawner.mem_limit = '32G'
-        spawner.extra_host_config = gpu_config(1)
+        # Note: CUDA_VISIBLE_DEVICES remains 0 inside the container because Docker 
+        # isolates the chosen physical GPU to be the container's primary (0th) GPU.
         spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
 
     else:  # cpu
