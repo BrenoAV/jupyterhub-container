@@ -1,49 +1,87 @@
 import os
 import docker
 
+# ── Data Persistence (Fix for docker compose down) ────────────────────────────
+# Forces JupyterHub to save the database and cookies in the persistent volume
+c.JupyterHub.db_url = 'sqlite:////srv/jupyterhub/data/jupyterhub.sqlite'
+c.JupyterHub.cookie_secret_file = '/srv/jupyterhub/data/jupyterhub_cookie_secret'
+
 # ── Authenticator ─────────────────────────────────────────────────────────────
 c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'
 c.Authenticator.admin_users = {"admin"}
 c.Authenticator.allow_all = True
 c.NativeAuthenticator.open_signup = False
-# c.NativeAuthenticator.check_common_password = True
-# c.NativeAuthenticator.minimum_password_length = 10
 c.NativeAuthenticator.allowed_failed_logins = 5
 c.NativeAuthenticator.seconds_before_next_try = 1200
 
-# ── Server & Resource Limits ──────────────────────────────────────────────────
-# TODO: increase the possible memory usage
+# ── Server Limits ─────────────────────────────────────────────────────────────
 c.JupyterHub.active_server_limit = 5
 c.JupyterHub.shutdown_on_logout = True
-
-# TODO: increase the memory and cpu limits
-c.DockerSpawner.mem_limit = "16G"
-c.DockerSpawner.cpu_limit = 4.0
 
 c.DockerSpawner.args = [
     "--ResourceUseDisplay.track_cpu_percent=True",
     "--ResourceUseDisplay.track_disk_usage=True"
 ]
 
-# ── COMBINED PRE-SPAWN HOOK (GPU + Folder Creation) ───────────────────────────
-# Must be async — DockerSpawner requires it to avoid silent failures
+# ── Resource & GPU Profiles --------------------------─────────────────────────
+# Users choose their resources when they log in. 
+# Limits and GPU allocations are handled here instead of globally.
+c.DockerSpawner.profile_list = [
+    {
+        'display_name': '🛠️ CPU Only (Data Prep & Coding)',
+        'description': '4 CPUs, 16GB RAM. Best for writing code and lightweight processing.',
+        'default': True,
+        'spawner_override': {
+            'cpu_limit': 4.0,
+            'mem_limit': '16G',
+            'extra_host_config': {
+                'device_requests': []
+            },
+            'environment': {'GPU_ENABLED': 'False'}
+        }
+    },
+    {
+        'display_name': '🚀 GPU 0 (1x A100)',
+        'description': '4 CPUs, 32GB RAM. Locks you to the first A100 GPU.',
+        'spawner_override': {
+            'cpu_limit': 4.0,
+            'mem_limit': '16G',
+            'extra_host_config': {
+                'device_requests': [
+                    docker.types.DeviceRequest(device_ids=["0"], capabilities=[["gpu"]])
+                ]
+            },
+            'environment': {
+                'GPU_ENABLED': 'True', 
+                'CUDA_VISIBLE_DEVICES': '0'
+            }
+        }
+    },
+    {
+        'display_name': '🚀 GPU 1 (1x A100)',
+        'description': '4 CPUs, 32GB RAM. Locks you to the second A100 GPU.',
+        'spawner_override': {
+            'cpu_limit': 4.0,
+            'mem_limit': '16G',
+            'extra_host_config': {
+                'device_requests': [
+                    docker.types.DeviceRequest(device_ids=["1"], capabilities=[["gpu"]])
+                ]
+            },
+            # Note: CUDA_VISIBLE_DEVICES is '0' here too. When Docker maps a single 
+            # specific GPU to a container, the container sees it internally as GPU 0.
+            'environment': {
+                'GPU_ENABLED': 'True', 
+                'CUDA_VISIBLE_DEVICES': '0'
+            } 
+        }
+    }
+]
+
+# ── PRE-SPAWN HOOK (Folder Creation Only) ─────────────────────────────────────
+# Must be async — DockerSpawner requires it.
+# GPU logic is removed from here because profile_list handles it now.
 async def pre_spawn_hook(spawner):
-    user_groups = [g.name for g in spawner.user.groups]
-    new_host_config = {}
-
-    if "gpu_users" in user_groups:
-        new_host_config["device_requests"] = [
-            docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])
-        ]
-        spawner.environment.update({"GPU_ENABLED": "True"})
-    else:
-        new_host_config["device_requests"] = []
-        spawner.environment.update({"GPU_ENABLED": "False"})
-
-    spawner.extra_host_config = new_host_config
-
-    # 2. Folder Creation on the Host Partition
-    # The Hub container must have /jupyterhub/data mounted (see docker-compose.yml)
     username = spawner.user.name
     host_path = f"/jupyterhub/data/{username}"
 
@@ -63,9 +101,9 @@ c.JupyterHub.services = [
             "python3",
             "-m",
             "jupyterhub_idle_culler",
-            "--timeout=7200",    # 2 hours
-            "--cull-every=120",  # check in 2m if changes
-            "--max-age=36000" # 10 hours
+            "--timeout=3600",    # 1 hour (cut down since GPUs are high-demand)
+            "--cull-every=60",   # check every 1 minute
+            "--max-age=36000"    # 10 hours max absolute age
         ],
     }
 ]
@@ -81,7 +119,6 @@ c.DockerSpawner.pull_policy = "never"
 c.DockerSpawner.notebook_dir = "/home/jovyan"
 
 # Capital Z = private SELinux label per container (correct for Rocky Linux user isolation)
-# The host path lives inside the loopback-mounted /jupyterhub partition
 c.DockerSpawner.volumes = {
     "/jupyterhub/data/{username}": {"bind": "/home/jovyan", "mode": "rw,Z"}
 }
@@ -91,11 +128,6 @@ c.DockerSpawner.network_name = os.environ.get("DOCKER_NETWORK_NAME", "jupyterhub
 c.DockerSpawner.use_internal_ip = True
 c.JupyterHub.hub_ip = "0.0.0.0"
 c.JupyterHub.hub_connect_ip = "jupyterhub"
-
-# ── Data Persistence ──────────────────────────────────────────────────────────
-# Force JupyterHub to save its state inside the mounted Docker volume
-c.JupyterHub.db_url = 'sqlite:////srv/jupyterhub/data/jupyterhub.sqlite'
-c.JupyterHub.cookie_secret_file = '/srv/jupyterhub/data/jupyterhub_cookie_secret'
 
 # ── Timeouts & Cleanup ────────────────────────────────────────────────────────
 c.DockerSpawner.remove = True  # auto-remove stopped containers
