@@ -84,11 +84,11 @@ async def pre_spawn_hook(spawner):
         }
 
     if profile == 'gpu0':
-    spawner.cpu_limit = 8.0
-    spawner.cpu_guarantee = 2.0
-    spawner.mem_limit = '48G'
-    spawner.mem_guarantee = '16G'
-    spawner.extra_host_config = gpu_config(0)
+        spawner.cpu_limit = 8.0
+        spawner.cpu_guarantee = 2.0
+        spawner.mem_limit = '48G'
+        spawner.mem_guarantee = '16G'
+        spawner.extra_host_config = gpu_config(0)
 
     elif profile == 'gpu1':
         spawner.cpu_limit = 8.0
