@@ -22,13 +22,12 @@ services:
       - jupyterhub_network
     deploy:
       resources:
-        # TODO: adjust the resources usage of compose
         limits:
-          cpus: '3.6'  # Xcores * %usage 
-          memory: 16G
+          cpus: '32'  # Xcores * %usage 
+          memory: 950G
         reservations:
-          cpus: '0.5'
-          memory: 2G
+          cpus: '4'
+          memory: 50G
 
 volumes:
   jupyterhub_data:
