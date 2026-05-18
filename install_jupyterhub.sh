@@ -22,9 +22,9 @@ log_error() { echo -e "${RED}  ✖  $1${RESET}" >&2; }
 die()       { log_error "$1"; exit 1; }
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-DISK_IMAGE="/jupyterhub_disk.img"
+DISK_IMAGE="/jupyter/jupyterhub_disk.img"
 MOUNT_POINT="/jupyterhub"
-DISK_SIZE="50G"
+DISK_SIZE="5000G"
 
 
 IMAGES=(
