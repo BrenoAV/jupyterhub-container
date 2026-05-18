@@ -5,6 +5,10 @@ import docker
 c.JupyterHub.db_url = 'sqlite:////srv/jupyterhub/data/jupyterhub.sqlite'
 c.JupyterHub.cookie_secret_file = '/srv/jupyterhub/data/jupyterhub_cookie_secret'
 
+# --- Certificate --------------------------------------------------------------
+# c.JupyterHub.ssl_key = '/path/to/my.key'
+# c.JupyterHub.ssl_cert = '/path/to/my.cert'
+
 # ── Authenticator ─────────────────────────────────────────────────────────────
 c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'
 c.Authenticator.admin_users = {"admin"}
@@ -12,6 +16,8 @@ c.Authenticator.allow_all = True
 c.NativeAuthenticator.open_signup = False
 c.NativeAuthenticator.allowed_failed_logins = 5
 c.NativeAuthenticator.seconds_before_next_try = 1200
+# c.NativeAuthenticator.check_common_password = True
+# c.NativeAuthenticator.minimum_password_length = 10
 
 # ── Server Limits ─────────────────────────────────────────────────────────────
 c.JupyterHub.active_server_limit = 5
