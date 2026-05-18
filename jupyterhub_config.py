@@ -85,14 +85,14 @@ async def pre_spawn_hook(spawner):
 
     if profile == 'gpu0':
         spawner.image = "custom-base:latest"
-        spawner.cpu_limit = 4.0
+        spawner.cpu_limit = 6.0
         spawner.mem_limit = '32G'
         spawner.extra_host_config = gpu_config(0)
         spawner.environment.update({'GPU_ENABLED': 'True', 'CUDA_VISIBLE_DEVICES': '0'})
 
     elif profile == 'gpu1':
         spawner.image = "custom-base:latest"
-        spawner.cpu_limit = 4.0
+        spawner.cpu_limit = 6.0
         spawner.mem_limit = '32G'
         spawner.extra_host_config = gpu_config(1)
         # Note: CUDA_VISIBLE_DEVICES remains 0 inside the container because Docker 
@@ -101,7 +101,7 @@ async def pre_spawn_hook(spawner):
 
     else:  # cpu
         spawner.image = "custom-base:latest"
-        spawner.cpu_limit = 4.0
+        spawner.cpu_limit = 28.0
         spawner.mem_limit = '32G'
         spawner.extra_host_config = {"device_requests": []}
         spawner.environment.update({'GPU_ENABLED': 'False'})
