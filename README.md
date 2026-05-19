@@ -245,44 +245,31 @@ You should see the 5 TB XFS filesystem listed at `/jupyterhub`.
 
 ## Phase 4 — Build Images & Start JupyterHub
 
-### 4.1 — Understand the two Dockerfiles
+### 4.1 — Build the single-user images
 
-**`Dockerfile.hub`** — builds the JupyterHub control plane container:
+Choose the image(s) that match your workload and build them before starting JupyterHub so they're available locally when the first user logs in.
 
-```dockerfile
-FROM jupyterhub/jupyterhub:latest
-
-RUN pip install --no-cache-dir \
-    dockerspawner \           # Spawns single-user servers as Docker containers
-    jupyterhub-nativeauthenticator \  # Lets users self-register with username/password
-    docker \                  # Python Docker SDK (used by dockerspawner)
-    jupyterhub-idle-culler    # Shuts down idle user servers automatically
-```
-
-**`Dockerfile.base`** — builds the single-user notebook image that each user gets their own container of:
-
-```dockerfile
-FROM quay.io/jupyter/scipy-notebook:latest
-# Includes: Python, NumPy, SciPy, pandas, Matplotlib, scikit-learn, and more
-
-USER root
-# (add system packages here if needed)
-
-USER jovyan
-CMD ["jupyterhub-singleuser"]
-```
-
-### 4.2 — Build the single-user image
-
-Run this from the directory containing `Dockerfile.base`:
+**Base image** (scipy stack — no deep learning framework):
 
 ```bash
 docker build -t custom-base:latest -f Dockerfile.base .
 ```
 
-This is the image each user's Jupyter server will run inside. Build it before starting JupyterHub so it's available locally when the first user logs in.
+**PyTorch image** (CUDA 12):
 
-### 4.3 — Review the Compose configuration
+```bash
+docker build -t custom-torch:latest -f Dockerfile.torch .
+```
+
+**TensorFlow image** (CUDA 12):
+
+```bash
+docker build -t custom-tensorflow:latest -f Dockerfile.tensorflow .
+```
+
+Each user's Jupyter server runs inside whichever image is configured in `jupyterhub_config.py` via `c.DockerSpawner.image`.
+
+### 4.2 — Review the Compose configuration
 
 `docker-compose.yml` defines the JupyterHub service:
 
@@ -297,7 +284,7 @@ This is the image each user's Jupyter server will run inside. Build it before st
 | Memory limit | 4 GB / 2 GB reserved | Same |
 | Network | `jupyterhub_network` (bridge) | Isolated network; user containers join the same network |
 
-### 4.4 — Create the required data directory on the XFS volume
+### 4.3 — Create the required data directory on the XFS volume
 
 ```bash
 mkdir -p /jupyterhub/data
@@ -305,7 +292,7 @@ mkdir -p /jupyterhub/data
 
 This is the directory bind-mounted into the hub container at `/jupyterhub/data`.
 
-### 4.5 — Start JupyterHub
+### 4.4 — Start JupyterHub
 
 ```bash
 docker compose up -d --build
@@ -317,13 +304,13 @@ docker compose up -d --build
 http://<your-server-ip>:8000
 ```
 
-### 4.6 — Check logs
+### 4.5 — Check logs
 
 ```bash
 docker compose logs -f jupyterhub
 ```
 
-### 4.7 — Stop JupyterHub
+### 4.6 — Stop JupyterHub
 
 ```bash
 docker compose down

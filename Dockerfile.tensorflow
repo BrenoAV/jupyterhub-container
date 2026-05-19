@@ -1,0 +1,58 @@
+FROM quay.io/jupyter/tensorflow-notebook:cuda12-latest
+USER root
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    vim \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+    jupyterlab-git \
+    jupyter-resource-usage
+
+# Deactivate conda by default (users can manually run: conda activate)
+RUN conda config --system --set auto_activate_base false
+
+# Write to /etc/bash.bashrc because /home/jovyan gets overwritten by the volume mount
+RUN cat >> /etc/bash.bashrc << 'BASHRC'
+# ─────────────────────────────────────────────
+# Detect background: if COLORFGBG is set, use it; otherwise default to dark
+_dark=1
+if [ -n "$COLORFGBG" ]; then
+    _bg="${COLORFGBG##*;}"
+    [ "$_bg" -lt 8 ] 2>/dev/null && _dark=1 || _dark=0
+fi
+if [ "$_dark" = "1" ]; then
+# Dark theme: bright, vivid colors
+    _c="\033[0m"
+    _b="\033[1m"
+    _head="\033[1;96m"    # bright cyan
+    _key="\033[1;92m"     # bright green
+    _val="\033[0;37m"     # light gray
+    _sep="\033[2;34m"     # dim blue
+else
+# Light theme: deep, high-contrast colors
+    _c="\033[0m"
+    _b="\033[1m"
+    _head="\033[1;34m"    # bold blue
+    _key="\033[1;32m"     # bold green (dark)
+    _val="\033[0;30m"     # black
+    _sep="\033[0;34m"     # blue
+fi
+echo -e "${_b}${_head}"
+echo -e "  ░░░ JupyterHub Environment — TensorFlow ░░░${_c}"
+echo -e ""
+echo -e "  ${_key}🐍 python${_c}    ${_val}$(python --version 2>/dev/null)${_c}"
+echo -e "  ${_key}🧠 tf${_c}        ${_val}$(python -c 'import tensorflow as tf; print(tf.__version__)' 2>/dev/null || echo 'not found')${_c}"
+echo -e "  ${_key}🖥️  gpu${_c}       ${_val}$(python -c 'import tensorflow as tf; gpus=tf.config.list_physical_devices("GPU"); print(f"{len(gpus)} GPU(s)" if gpus else "CPU only")' 2>/dev/null || echo 'n/a')${_c}"
+echo -e "  ${_key}⚡ uv${_c}       ${_val}$(uv --version 2>/dev/null || echo 'not found')${_c}"
+echo -e "  ${_key}📦 conda${_c}     ${_val}$(conda --version 2>/dev/null || echo 'not found') (inactive by default)${_c}"
+echo -e "  ${_key}🔒 venv${_c}      ${_val}$(python -c 'import venv; print("available")' 2>/dev/null || echo 'not found')${_c}"
+echo -e ""
+echo -e "${_sep}─────────────────────────────────────────────${_c}"
+unset _c _b _head _key _val _sep _dark _bg
+BASHRC
+
+USER jovyan
+CMD ["jupyterhub-singleuser"]
