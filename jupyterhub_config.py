@@ -89,19 +89,20 @@ async def pre_spawn_hook(spawner):
     if profile == 'torch_gpu0':
         spawner.image = "custom-torch:latest"
         spawner.extra_host_config = gpu_config(0)
-        # ADDED: Map physical GPU 0 to logical GPU 0 inside the container
         spawner.environment.update({
             "NVIDIA_VISIBLE_DEVICES": "0",
-            "CUDA_VISIBLE_DEVICES": "0"
-        })
+            "CUDA_VISIBLE_DEVICES": "0",
+            "NVIDIA_DRIVER_CAPABILITIES": "compute,utility"
+        }))
         for k, v in gpu_resources.items(): setattr(spawner, k, v)
 
     elif profile == 'torch_gpu1':
         spawner.image = "custom-torch:latest"
         spawner.extra_host_config = gpu_config(1)
         spawner.environment.update({
-            "NVIDIA_VISIBLE_DEVICES": "1",
-            "CUDA_VISIBLE_DEVICES": "0"
+            "NVIDIA_VISIBLE_DEVICES": "0",
+            "CUDA_VISIBLE_DEVICES": "0",
+            "NVIDIA_DRIVER_CAPABILITIES": "compute,utility"
         })
         for k, v in gpu_resources.items(): setattr(spawner, k, v)
         
