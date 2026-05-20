@@ -261,12 +261,6 @@ docker build -t custom-base:latest -f Dockerfile.base .
 docker build -t custom-torch:latest -f Dockerfile.torch .
 ```
 
-**TensorFlow image** (CUDA 12):
-
-```bash
-docker build -t custom-tensorflow:latest -f Dockerfile.tensorflow .
-```
-
 Each user's Jupyter server runs inside whichever image is configured in `jupyterhub_config.py` via `c.DockerSpawner.image`.
 
 ### 4.2 — Review the Compose configuration

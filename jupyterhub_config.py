@@ -47,10 +47,6 @@ c.DockerSpawner.options_form = """
       <option value="torch_gpu0">🔥 PyTorch · GPU 0</option>
       <option value="torch_gpu1">🔥 PyTorch · GPU 1</option>
     </optgroup>
-    <optgroup label="── TensorFlow + CUDA ────────────────────────">
-      <option value="tf_gpu0">🧠 TensorFlow · GPU 0</option>
-      <option value="tf_gpu1">🧠 TensorFlow · GPU 1</option>
-    </optgroup>
     <optgroup label="── CPU Only ─────────────────────────────────">
       <option value="cpu">🛠️ CPU Only</option>
     </optgroup>
@@ -99,17 +95,6 @@ async def pre_spawn_hook(spawner):
         spawner.image = "custom-torch:latest"
         spawner.extra_host_config = gpu_config(1)
         for k, v in gpu_resources.items(): setattr(spawner, k, v)
-
-    elif profile == 'tf_gpu0':
-        spawner.image = "custom-tensorflow:latest"
-        spawner.extra_host_config = gpu_config(0)
-        for k, v in gpu_resources.items(): setattr(spawner, k, v)
-
-    elif profile == 'tf_gpu1':
-        spawner.image = "custom-tensorflow:latest"
-        spawner.extra_host_config = gpu_config(1)
-        for k, v in gpu_resources.items(): setattr(spawner, k, v)
-
     else:  # cpu
         spawner.image = "custom-base:latest"
         spawner.cpu_limit = 16.0
