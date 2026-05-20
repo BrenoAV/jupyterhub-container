@@ -93,7 +93,7 @@ async def pre_spawn_hook(spawner):
             "NVIDIA_VISIBLE_DEVICES": "0",
             "CUDA_VISIBLE_DEVICES": "0",
             "NVIDIA_DRIVER_CAPABILITIES": "compute,utility"
-        }))
+        })
         for k, v in gpu_resources.items(): setattr(spawner, k, v)
 
     elif profile == 'torch_gpu1':
