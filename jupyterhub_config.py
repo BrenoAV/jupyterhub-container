@@ -74,7 +74,6 @@ async def pre_spawn_hook(spawner):
             "device_requests": [
                 docker.types.DeviceRequest(
                     device_ids=[str(device_id)],
-                    # ADDED: explicit compute and utility requests for Enterprise/L40S drivers
                     capabilities=[["gpu", "compute", "utility"]]
                 )
             ]
@@ -100,7 +99,6 @@ async def pre_spawn_hook(spawner):
     elif profile == 'torch_gpu1':
         spawner.image = "custom-torch:latest"
         spawner.extra_host_config = gpu_config(1)
-        # ADDED: Map physical GPU 1 to logical GPU 0 inside the container
         spawner.environment.update({
             "NVIDIA_VISIBLE_DEVICES": "1",
             "CUDA_VISIBLE_DEVICES": "0"
@@ -114,7 +112,6 @@ async def pre_spawn_hook(spawner):
         spawner.mem_limit = '64G'
         spawner.mem_guarantee = '16G'
         spawner.extra_host_config = {"device_requests": []}
-        # ADDED: Strictly hide GPUs from CPU instances
         spawner.environment.update({
             "NVIDIA_VISIBLE_DEVICES": "none",
             "CUDA_VISIBLE_DEVICES": ""
