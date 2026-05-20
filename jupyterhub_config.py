@@ -34,8 +34,6 @@ c.DockerSpawner.image = "custom-base:latest"  # Default fallback
 c.DockerSpawner.pull_policy = "never"
 
 # ── Profiles ──────────────────────────────────────────────────────────────────
-# Simplified to generic hardware slots. Users install frameworks via conda.
-
 c.DockerSpawner.options_form = """
 <style>
   .profile-group { margin-bottom: 1rem; }
@@ -45,12 +43,16 @@ c.DockerSpawner.options_form = """
 <div class="profile-group">
   <label for="profile">Select Server Profile:</label>
   <select name="profile" class="form-control">
-    <optgroup label="── GPU Environment (Bring Your Own Framework) ─">
-      <option value="gpu0">🚀 GPU 1 (CUDA Base) · 32 GB RAM</option>
-      <option value="gpu1">🚀 GPU 2 (CUDA Base) · 32 GB RAM</option>
+    <optgroup label="── PyTorch + CUDA ──────────────────────────">
+      <option value="torch_gpu0">🔥 PyTorch · GPU 0</option>
+      <option value="torch_gpu1">🔥 PyTorch · GPU 1</option>
     </optgroup>
-    <optgroup label="── CPU Only ───────────────────────────────────">
-      <option value="cpu">🛠️ CPU Only (scipy-notebook) · 32 GB RAM</option>
+    <optgroup label="── TensorFlow + CUDA ────────────────────────">
+      <option value="tf_gpu0">🧠 TensorFlow · GPU 0</option>
+      <option value="tf_gpu1">🧠 TensorFlow · GPU 1</option>
+    </optgroup>
+    <optgroup label="── CPU Only ─────────────────────────────────">
+      <option value="cpu">🛠️ CPU Only</option>
     </optgroup>
   </select>
 </div>
@@ -63,7 +65,6 @@ c.DockerSpawner.options_from_form = options_from_form
 
 # ── Pre-spawn hook: image + resources per profile ─────────────────────────────
 async def pre_spawn_hook(spawner):
-    # Ensure per-user folder exists on host
     username = spawner.user.name
     host_path = f"/jupyterhub/data/{username}"
     if not os.path.exists(host_path):
@@ -72,7 +73,6 @@ async def pre_spawn_hook(spawner):
 
     profile = spawner.user_options.get('profile', 'cpu')
 
-    # Shared GPU config builder via Docker API
     def gpu_config(device_id):
         return {
             "device_requests": [
@@ -83,21 +83,35 @@ async def pre_spawn_hook(spawner):
             ]
         }
 
-    if profile == 'gpu0':
-        spawner.cpu_limit = 8.0
-        spawner.cpu_guarantee = 2.0
-        spawner.mem_limit = '48G'
-        spawner.mem_guarantee = '16G'
-        spawner.extra_host_config = gpu_config(0)
+    gpu_resources = dict(
+        cpu_limit=8.0,
+        cpu_guarantee=2.0,
+        mem_limit='48G',
+        mem_guarantee='16G',
+    )
 
-    elif profile == 'gpu1':
-        spawner.cpu_limit = 8.0
-        spawner.cpu_guarantee = 2.0
-        spawner.mem_limit = '48G'
-        spawner.mem_guarantee = '16G'
+    if profile == 'torch_gpu0':
+        spawner.image = "custom-torch:latest"
+        spawner.extra_host_config = gpu_config(0)
+        for k, v in gpu_resources.items(): setattr(spawner, k, v)
+
+    elif profile == 'torch_gpu1':
+        spawner.image = "custom-torch:latest"
         spawner.extra_host_config = gpu_config(1)
-    
+        for k, v in gpu_resources.items(): setattr(spawner, k, v)
+
+    elif profile == 'tf_gpu0':
+        spawner.image = "custom-tensorflow:latest"
+        spawner.extra_host_config = gpu_config(0)
+        for k, v in gpu_resources.items(): setattr(spawner, k, v)
+
+    elif profile == 'tf_gpu1':
+        spawner.image = "custom-tensorflow:latest"
+        spawner.extra_host_config = gpu_config(1)
+        for k, v in gpu_resources.items(): setattr(spawner, k, v)
+
     else:  # cpu
+        spawner.image = "custom-base:latest"
         spawner.cpu_limit = 16.0
         spawner.cpu_guarantee = 4.0
         spawner.mem_limit = '64G'
