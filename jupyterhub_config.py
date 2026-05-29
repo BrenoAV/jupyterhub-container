@@ -16,8 +16,8 @@ c.Authenticator.allow_all = True
 c.NativeAuthenticator.open_signup = False
 c.NativeAuthenticator.allowed_failed_logins = 5
 c.NativeAuthenticator.seconds_before_next_try = 1200
-# c.NativeAuthenticator.check_common_password = True
-# c.NativeAuthenticator.minimum_password_length = 10
+c.NativeAuthenticator.check_common_password = True
+c.NativeAuthenticator.minimum_password_length = 8
 
 # ── Server Limits ─────────────────────────────────────────────────────────────
 c.JupyterHub.active_server_limit = 5
@@ -81,9 +81,9 @@ async def pre_spawn_hook(spawner):
 
     gpu_resources = dict(
         cpu_limit=8.0,
-        cpu_guarantee=2.0,
-        mem_limit='48G',
-        mem_guarantee='16G',
+        cpu_guarantee=4.0,
+        mem_limit='64G',
+        mem_guarantee='32G',
     )
 
     if profile == 'torch_gpu0':
@@ -108,10 +108,10 @@ async def pre_spawn_hook(spawner):
         
     else:  # cpu
         spawner.image = "custom-base:latest"
-        spawner.cpu_limit = 16.0
-        spawner.cpu_guarantee = 4.0
+        spawner.cpu_limit = 32.0
+        spawner.cpu_guarantee = 16.0
         spawner.mem_limit = '64G'
-        spawner.mem_guarantee = '16G'
+        spawner.mem_guarantee = '32G'
         spawner.extra_host_config = {"device_requests": []}
         spawner.environment.update({
             "NVIDIA_VISIBLE_DEVICES": "none",
@@ -127,7 +127,7 @@ c.JupyterHub.services = [
         "admin": True,
         "command": [
             "python3", "-m", "jupyterhub_idle_culler",
-            "--timeout=3600",
+            "--timeout=1800",
             "--cull-every=60",
             "--max-age=36000"
         ],

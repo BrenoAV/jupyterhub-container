@@ -1,8 +1,5 @@
-# JupyterHub on Rocky Linux 9 — Manual Setup Guide
+# JupyterHub on Rocky Linux 10 — Manual Setup Guide
 
-This guide walks through everything `install_jupyterhub.sh` does, step by step, so you understand each decision and can adapt it to your environment. Run all commands as **root** (or with `sudo`) unless otherwise noted.
-
----
 
 ## Overview
 
@@ -17,7 +14,7 @@ The setup has four phases, which can be done in any order but are best run in se
 
 ## Phase 1 — Install Docker CE & Compose
 
-Docker CE is installed from Docker's official CentOS repository (compatible with Rocky Linux 9).
+Docker CE is installed from Docker's official CentOS repository.
 
 ### 1.1 — Install the DNF plugins package
 
@@ -104,7 +101,7 @@ dnf install -y \
 
 ```bash
 dnf config-manager --add-repo \
-  https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo
+  https://developer.download.nvidia.com/compute/cuda/repos/rhel10/x86_64/cuda-rhel10.repo
 ```
 
 #### 2.4 — Refresh metadata and install the driver
@@ -358,17 +355,39 @@ docker compose up -d --build
 
 ## File Layout
 
-```
+### 1. Application Repository
+*Usually located in `/opt/jupyterhub-deploy` or your home directory.*
+
+```text
 .
-├── Dockerfile.base          # Single-user notebook image (scipy stack)
-├── Dockerfile.hub           # JupyterHub control plane image
-├── docker-compose.yml       # Service definition
-├── jupyterhub_config.py     # Hub configuration (you provide this)
-└── install_jupyterhub.sh    # Automated installer (reference implementation)
+├── docker-compose.yml       # Defines the Hub service and volume mappings
+├── jupyterhub_config.py     # Main Python configuration for the Hub & Spawner
+├── Dockerfile.hub           # Instructions to build the Hub control plane image
+├── Dockerfile.base          # Instructions to build the CPU/Scipy user image
+└── Dockerfile.torch         # Instructions to build the GPU/PyTorch user image
+```
 
-/jupyter/
-└── jupyterhub_disk.img      # Sparse XFS disk image (5 TB)
+### 2. System Filesystem (Storage)
+*These paths are created on the host OS during Phase 3.*
 
-/jupyterhub/                 # Mount point for the XFS image
-└── data/                    # User notebook files (bind-mounted into hub)
+```text
+/
+├── jupyter/
+│   └── jupyterhub_disk.img  # The 5TB sparse file (XFS formatted)
+│
+└── jupyterhub/              # THE MOUNT POINT (Active XFS Partition)
+    └── data/                # Persistent user notebooks
+        ├── user-alpha/      # Automatically created on login
+        ├── user-beta/
+        └── shared/          # (Optional) Shared data directory
+```
+
+### 3. Container View (Internal)
+*How the Hub container sees the world once it is running.*
+
+```text
+/srv/jupyterhub/
+├── jupyterhub_config.py     # Bind-mounted from project root
+├── jupyterhub.sqlite        # Database (stored in named docker volume)
+└── data/                    # Bind-mounted from host /jupyterhub/data
 ```
