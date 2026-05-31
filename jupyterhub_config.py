@@ -36,21 +36,52 @@ c.DockerSpawner.pull_policy = "never"
 # ── Profiles ──────────────────────────────────────────────────────────────────
 c.DockerSpawner.options_form = """
 <style>
+  .corisco-container { margin-bottom: 1.5rem; }
+  .corisco-header { text-align: center; margin-bottom: 1rem; }
+  .corisco-header h3 { font-weight: bold; color: #2c3e50; margin-bottom: 0.2rem; }
+  .corisco-info { 
+      font-size: 0.95rem; 
+      color: #333; 
+      background-color: #f8f9fa; 
+      padding: 1rem; 
+      border-radius: 6px; 
+      border-left: 4px solid #007bff;
+      margin-bottom: 1.5rem;
+  }
+  .corisco-info ul { margin-top: 0.5rem; margin-bottom: 0; padding-left: 1.5rem; }
+  .corisco-info li { margin-bottom: 0.3rem; }
   .profile-group { margin-bottom: 1rem; }
   .profile-group label { font-weight: 600; display: block; margin-bottom: .4rem; }
 </style>
 
-<div class="profile-group">
-  <label for="profile">Select Server Profile:</label>
-  <select name="profile" class="form-control">
-    <optgroup label="── PyTorch + CUDA ──────────────────────────">
-      <option value="torch_gpu0">🔥 PyTorch · GPU 0</option>
-      <option value="torch_gpu1">🔥 PyTorch · GPU 1</option>
-    </optgroup>
-    <optgroup label="── CPU Only ─────────────────────────────────">
-      <option value="cpu">🛠️ CPU Only</option>
-    </optgroup>
-  </select>
+<div class="corisco-container">
+  <div class="corisco-header">
+    <h3>Welcome to Corisco Lab ⚡</h3>
+    <p style="color: #666; font-size: 0.9rem;">Select your computing environment below.</p>
+  </div>
+
+  <div class="corisco-info">
+    <strong>Profile Details:</strong>
+    <ul>
+      <li><strong>🔥 PyTorch · GPU:</strong> Deep learning environment with CUDA support. <br>
+      <em>Limits: 8 CPUs | 64GB RAM | 1 Dedicated GPU</em></li>
+      <li><strong>🛠️ CPU Only:</strong> Standard environment for data processing and CPU tasks. <br>
+      <em>Limits: 32 CPUs | 64GB RAM</em></li>
+    </ul>
+  </div>
+
+  <div class="profile-group">
+    <label for="profile">Select Server Profile:</label>
+    <select name="profile" class="form-control">
+      <optgroup label="── PyTorch + CUDA ──────────────────────────">
+        <option value="torch_gpu0">🔥 PyTorch · GPU 0</option>
+        <option value="torch_gpu1">🔥 PyTorch · GPU 1</option>
+      </optgroup>
+      <optgroup label="── CPU Only ─────────────────────────────────">
+        <option value="cpu">🛠️ CPU Only</option>
+      </optgroup>
+    </select>
+  </div>
 </div>
 """
 

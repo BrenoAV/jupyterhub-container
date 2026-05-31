@@ -1,7 +1,7 @@
 FROM quay.io/jupyter/pytorch-notebook:cuda12-latest
 USER root
 
-# Set the flavor for the welcome message
+# Set the environment name for the dynamic panel
 ENV IMAGE_FLAVOR="PyTorch"
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/

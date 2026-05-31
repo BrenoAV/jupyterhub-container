@@ -1,7 +1,7 @@
 FROM quay.io/jupyter/scipy-notebook:latest
 USER root
 
-# 1. Set the environment name for the dynamic panel
+# Set the environment name for the dynamic panel
 ENV IMAGE_FLAVOR="SciPy"
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir \
 # Deactivate conda by default (users can manually run: conda activate)
 RUN conda config --system --set auto_activate_base false
 
-# 2. Copy and append the shared script instead of hardcoding it
+# Copy and append the shared script instead of hardcoding it
 COPY motd.sh /tmp/motd.sh
 RUN cat /tmp/motd.sh >> /etc/bash.bashrc && rm /tmp/motd.sh
 
