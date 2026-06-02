@@ -4,4 +4,6 @@ RUN pip install --no-cache-dir \
     dockerspawner \
     jupyterhub-nativeauthenticator \
     docker \
-    jupyterhub-idle-culler
+    jupyterhub-idle-culler \
+    marimo \
+    marimo-jupyter-extension
