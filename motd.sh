@@ -25,7 +25,7 @@ fi
 echo -e "${_b}${_head}"
 echo -e "  ╭───────────────────────────────────────────╮"
 echo -e "  │                                           │"
-echo -e "  │               Corisco Colab               │"
+echo -e "  │           ✨ Corisco CoLab ✨            │"
 echo -e "  │                                           │"
 echo -e "  ╰───────────────────────────────────────────╯${_c}"
 echo -e "        ░░░ Environment: ${IMAGE_FLAVOR:-Base} ░░░"
