@@ -12,7 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir \
     jupyterlab-git \
-    jupyter-resource-usage
+    jupyter-resource-usage \
+    jupyter-marimo-proxy \
+    marimo[sandbox] \
+    marimo-jupyter-extension
 
 # Deactivate conda by default (users can manually run: conda activate)
 RUN conda config --system --set auto_activate_base false
