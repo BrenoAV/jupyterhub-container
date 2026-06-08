@@ -131,7 +131,7 @@ c.DockerSpawner.options_form = """
 
 <div class="corisco-container">
   <div class="corisco-header">
-    <h3>Welcome to ⚡Corisco CoLab⚡</h3>
+    <h3>Welcome to ✨ Corisco CoLab ✨</h3>
     <p>Choose the workspace that best fits what you want to run.</p>
   </div>
 
